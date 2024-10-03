@@ -1,13 +1,39 @@
 <?php
 
+$printersJson = 'printers.json';
+
+$output = '{"msg": "Nothing to see here..."}';
+if (isset($_GET['get'])) {
+  switch ($_GET['get']) {
+    case 'printers':
+      if (file_exists($printersJson)) {
+        $output = file_get_contents($printersJson);
+      } else {
+        $output = discoverPrinters();
+      }
+      break;
+    default:
+      break;
+  }
+} elseif (isset($_GET['action'])) {
+  switch ($_GET['action']) {
+    case 'discover':
+      $output = discoverPrinters();
+      break;
+    default:
+      break;
+  }
+}
 header('Content-Type: application/json; charset=utf-8');
-echo discoverPrinters();
+echo $output;
+die;
 
 function savePrinterInfo($response) {
-    $json = 'printers.json';
+    global $printersJson;
+
     $printers = new stdClass();
-    if (file_exists($json)) {
-      $printers = json_decode(file_get_contents($json));
+    if (file_exists($printersJson)) {
+      $printers = json_decode(file_get_contents($printersJson));
     }
     $info = json_decode($response);
     $data = $info->Data;
@@ -22,20 +48,20 @@ function savePrinterInfo($response) {
       'firmware' => $data->FirmwareVersion,
     );
     $printers->$id = $printer;
-    if (file_put_contents($json, json_encode($printers, JSON_PRETTY_PRINT))) {
+    if (file_put_contents($printersJson, json_encode($printers, JSON_PRETTY_PRINT))) {
       return true;
     }
     return false;
 }
 
 function discoverPrinters() {
+  global $printersJson;
   $socket = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
   $sockets = array($socket);
   $null = NULL;
   $socketTimeout = 3;
   $socketOpen = true;
   $msg = "M99999";
-  $json = 'printers.json';
 
   socket_set_option($socket, SOL_SOCKET, SO_BROADCAST, 1);
   socket_set_option($socket, SOL_SOCKET, SO_REUSEADDR, 1);
@@ -51,8 +77,8 @@ function discoverPrinters() {
     }
     $socketOpen = socket_select($sockets, $null, $null, $socketTimeout);
   }
-  if (file_exists($json)) {
-    return file_get_contents($json);
+  if (file_exists($printersJson)) {
+    return file_get_contents($printersJson);
   } else {
     return "{}";
   }
