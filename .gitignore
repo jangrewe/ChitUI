@@ -1,2 +1,3 @@
-printers.json
-/printers.json
+.venv
+test.py
+__pycache__

@@ -1,0 +1,95 @@
+// MACHINE_STATUS
+const SDCP_MACHINE_STATUS_IDLE = 0  // Idle
+const SDCP_MACHINE_STATUS_PRINTING = 1  // Executing print task
+const SDCP_MACHINE_STATUS_FILE_TRANSFERRING = 2  // File transfer in progress
+const SDCP_MACHINE_STATUS_EXPOSURE_TESTING = 3  // Exposure test in progress
+const SDCP_MACHINE_STATUS_DEVICES_TESTING = 4  //Device self-check in progress
+// PRINT_STATUS
+const SDCP_PRINT_STATUS_IDLE = 0  // Idle
+const SDCP_PRINT_STATUS_HOMING = 1  // Resetting
+const SDCP_PRINT_STATUS_DROPPING = 2  // Descending
+const SDCP_PRINT_STATUS_EXPOSURING = 3  // Exposing
+const SDCP_PRINT_STATUS_LIFTING = 4  // Lifting
+const SDCP_PRINT_STATUS_PAUSING = 5  // Executing Pause Action
+const SDCP_PRINT_STATUS_PAUSED = 6  // Suspended
+const SDCP_PRINT_STATUS_STOPPING = 7  // Executing Stop Action
+const SDCP_PRINT_STATUS_STOPED = 8  // Stopped
+const SDCP_PRINT_STATUS_COMPLETE = 9  // Print Completed
+const SDCP_PRINT_STATUS_FILE_CHECKING = 10 // File Checking in Progress
+// PRINT_ERROR
+const SDCP_PRINT_ERROR_NONE = 0  // Normal
+const SDCP_PRINT_ERROR_CHECK = 1  // File MD5 Check Failed
+const SDCP_PRINT_ERROR_FILEIO = 2  // File Read Failed
+const SDCP_PRINT_ERROR_INVLAID_RESOLUTION = 3  // Resolution Mismatch
+const SDCP_PRINT_ERROR_UNKNOWN_FORMAT = 4  // Format Mismatch
+const SDCP_PRINT_ERROR_UNKNOWN_MODEL = 5  // Machine Model Mismatch
+// FILE_TRANSFER
+const SDCP_FILE_TRANSFER_ACK_SUCCESS = 0  // Success
+const SDCP_FILE_TRANSFER_ACK_NOT_TRANSFER = 1  // The printer is not currently transferring files.
+const SDCP_FILE_TRANSFER_ACK_CHECKING = 2  // The printer is already in the file verification phase.
+const SDCP_FILE_TRANSFER_ACK_NOT_FOUND = 3  // File not found.
+// PRINT_CTRL
+const SDCP_PRINT_CTRL_ACK_OK = 0  // OK
+const SDCP_PRINT_CTRL_ACK_BUSY = 1  // Busy
+const SDCP_PRINT_CTRL_ACK_NOT_FOUND = 2  // File Not Found
+const SDCP_PRINT_CTRL_ACK_MD5_FAILED = 3  // MD5 Verification Failed
+const SDCP_PRINT_CTRL_ACK_FILEIO_FAILED = 4  // File Read Failed
+const SDCP_PRINT_CTRL_ACK_INVLAID_RESOLUTION = 5 // Resolution Mismatch
+const SDCP_PRINT_CTRL_ACK_UNKNOW_FORMAT = 6  // Unrecognized File Format
+const SDCP_PRINT_CTRL_ACK_UNKNOW_MODEL = 7  // Machine Model Mismatch
+// PRINT_CAUSE
+const SDCP_PRINT_CAUSE_OK = 0  // Normal
+const SDCP_PRINT_CAUSE_TEMP_ERROR = 1  // Over-temperature
+const SDCP_PRINT_CAUSE_CALIBRATE_FAILED = 2  // Strain Gauge Calibration Failed
+const SDCP_PRINT_CAUSE_RESIN_LACK = 3  // Resin Level Low Detected
+const SDCP_PRINT_CAUSE_RESIN_OVER = 4  // The volume of resin required by the model exceeds the maximum capacity of the resin vat
+const SDCP_PRINT_CAUSE_PROBE_FAIL = 5  // No Resin Detected
+const SDCP_PRINT_CAUSE_FOREIGN_BODY = 6  // Foreign Object Detected
+const SDCP_PRINT_CAUSE_LEVEL_FAILED = 7  // Auto-leveling Failed
+const SDCP_PRINT_CAUSE_RELEASE_FAILED = 8  // Model Detachment Detected
+const SDCP_PRINT_CAUSE_SG_OFFLINE = 9  // Strain Gauge Not Connected
+const SDCP_PRINT_CAUSE_LCD_DET_FAILED = 10  // LCD Screen Connection Abnormal
+const SDCP_PRINT_CAUSE_RELEASE_OVERCOUNT = 11  // The cumulative release film usage has reached the maximum value
+const SDCP_PRINT_CAUSE_UDISK_REMOVE = 12  // USB drive detected as removed, printing has been stopped
+const SDCP_PRINT_CAUSE_HOME_FAILED_X = 13  // Detection of X-axis motor anomaly, printing has been stopped
+const SDCP_PRINT_CAUSE_HOME_FAILED_Z = 14  // Detection of Z-axis motor anomaly, printing has been stopped
+const SDCP_PRINT_CAUSE_RESIN_ABNORMAL_HIGH = 15  // The resin level has been detected to exceed the maximum value, and printing has been stopped
+const SDCP_PRINT_CAUSE_RESIN_ABNORMAL_LOW = 16  // Resin level detected as too low, printing has been stopped
+const SDCP_PRINT_CAUSE_HOME_FAILED = 17  // Home position calibration failed, please check if the motor or limit switch is functioning properly
+const SDCP_PRINT_CAUSE_PLAT_FAILED = 18  // A model is detected on the platform; please clean it and then restart printing
+const SDCP_PRINT_CAUSE_ERROR = 19  // Printing Exception
+const SDCP_PRINT_CAUSE_MOVE_ABNORMAL = 20  // Motor Movement Abnormality
+const SDCP_PRINT_CAUSE_AIC_MODEL_NONE = 21  // No model detected, please troubleshoot
+const SDCP_PRINT_CAUSE_AIC_MODEL_WARP = 22  // Warping of the model detected, please investigate
+const SDCP_PRINT_CAUSE_HOME_FAILED_Y = 23  // Deprecated
+// PRINT_CAUSED
+const SDCP_PRINT_CAUSED_FILE_ERROR = 24  // Error File
+const SDCP_PRINT_CAUSED_CAMERA_ERROR = 25  // Camera Error. Please check if the camera is properly connected, or you can also disable this feature to continue printing
+const SDCP_PRINT_CAUSED_NETWORK_ERROR = 26  // Network Connection Error. Please check if your network connection is stable, or you can also disable this feature to continue printing
+const SDCP_PRINT_CAUSED_SERVER_CONNECT_FAILED = 27 // Server Connection Failed. Please contact our customer support, or you can also disable this feature to continue printing
+const SDCP_PRINT_CAUSED_DISCONNECT_APP = 28  // This printer is not bound to an app. To perform time-lapse photography, please first enable the remote control feature, or you can also disable this feature to continue printing
+const SDCP_PIRNT_CAUSED_CHECK_AUTO_RESIN_FEEDER = 29  // lease check the installation of the "automatic material extraction / feeding machine"
+const SDCP_PRINT_CAUSED_CONTAINER_RESIN_LOW = 30  // The resin in the container is running low. Add more resin to automatically close this notification, or click "Stop Auto Feeding" to continue printing
+const SDCP_PRINT_CAUSED_BOTTLE_DISCONNECT = 31  // Please ensure that the automatic material extraction/feeding machine is correctly installed and the data cable is connected
+const SDCP_PRINT_CAUSED_FEED_TIMEOUT = 32  // Automatic material extraction timeout, please check if the resin tube is blocked
+const SDCP_PRINT_CAUSE_TANK_TEMP_SENSOR_OFFLINE = 33  // Resin vat temperature sensor not connected
+const SDCP_PRINT_CAUSE_TANK_TEMP_SENSOR_ERRO = 34  // Resin vat temperature sensor indicates an over-temperature condition
+const SDCP_ERROR_CODE_MD5_FAILED = 1  // File Transfer MD5 Check Failed
+const SDCP_ERROR_CODE_FORMAT_FAILED = 2  // File format is incorrect
+// CMD
+const SDCP_CMD_STATUS = 0
+const SDCP_CMD_ATTRIBUTES = 1
+const SDCP_CMD_START_PRINTING = 128
+const SDCP_CMD_PAUSE_PRINTING = 129
+const SDCP_CMD_STOP_PRINTING = 130
+const SDCP_CMD_CONTINUE_PRINTING = 131
+const SDCP_CMD_STOP_FEEDING = 132
+const SDCP_CMD_SKIP_PREHEATING = 133
+const SDCP_CMD_CHANGE_PRINTER_NAME = 192 // "Data": {"Name": "newName"}
+const SDCP_CMD_TERMINATE_FILE_TRANSFER = 255
+const SDCP_CMD_RETRIEVE_FILE_LIST = 258 // "Data": {"Url": "/usb/path"}
+const SDCP_CMD_BATCH_DELETE_FILES = 259 // "Data": {"FileList": ["/usb/xx.x"], "FolderList": ["/usb/yy"]}
+const SDCP_CMD_RETRIEVE_TASKS_HISTORY = 320
+const SDCP_CMD_RETRIEVE_TASK_DETAILS = 321 // "Data": {"Id": ["xxxxxxxxxxx"]}
+const SDCP_CMD_VIDEO_STREAMING = 386 // "Data": {"Enable" : 0/1}
+const SDCP_CMD_TIMELAPSE = 387 // "Data": {"Enable" : 0/1}
