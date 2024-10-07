@@ -4,6 +4,7 @@ const SDCP_MACHINE_STATUS_PRINTING = 1  // Executing print task
 const SDCP_MACHINE_STATUS_FILE_TRANSFERRING = 2  // File transfer in progress
 const SDCP_MACHINE_STATUS_EXPOSURE_TESTING = 3  // Exposure test in progress
 const SDCP_MACHINE_STATUS_DEVICES_TESTING = 4  //Device self-check in progress
+const SDCP_MACHINE_STATUS_UNKNOWN_8 = 8  // UNKNOWN, is sent after file transfer
 // PRINT_STATUS
 const SDCP_PRINT_STATUS_IDLE = 0  // Idle
 const SDCP_PRINT_STATUS_HOMING = 1  // Resetting

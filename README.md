@@ -22,3 +22,8 @@ As ChitUI needs to broadcast UDP messages on your network segment, running ChitU
 docker build -t chitui:latest .
 docker run --rm --name chitui --net=host chitui:latest
 ```
+
+## Configuration
+Configuration is done via environment variables:
+* `PORT` to set the HTTP port of the web interface (default: `54780`)
+* `DEBUG` to enable debug logging, log colorization and code reloading (default: `False`)

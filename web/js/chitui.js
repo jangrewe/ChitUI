@@ -2,6 +2,7 @@ const socket = io();
 var websockets = []
 var printers = {}
 
+
 socket.on("connect", () => {
   console.log('socket.io connected: ' + socket.id);
   setServerStatus(true)
@@ -48,44 +49,60 @@ socket.on("printer_notice", (data) => {
 
 socket.on("printer_status", (data) => {
   //console.log(JSON.stringify(data))
-  var fields = {}
+  if (!printers[data.MainboardID].hasOwnProperty('status')) {
+    printers[data.MainboardID]['status'] = {}
+  }
   var filter = ['CurrentStatus', 'PrintScreen', 'ReleaseFilm', 'TempOfUVLED', 'TimeLapseStatus', 'PrintInfo']
   $.each(data.Status, function (key, val) {
     if (filter.includes(key)) {
-      fields[key] = val
+      if (val.length == 1) {
+        val = val[0]
+      }
+      printers[data.MainboardID]['status'][key] = val
     }
   })
-  printers[data.MainboardID]['status'] = fields
+  printer_status = printers[data.MainboardID]['status']
+  // update file list on status change from UNKNOWN_8 to Idle
+  if (typeof printer_status['PreviousStatus'] !== undefined
+    && printer_status['PreviousStatus'] == SDCP_MACHINE_STATUS_UNKNOWN_8
+    && printer_status['CurrentStatus'] == SDCP_MACHINE_STATUS_IDLE) {
+    socket.emit("printer_files", { id: data.MainboardID, url: '/local' })
+  }
+  printers[data.MainboardID]['status']['PreviousStatus'] = printer_status['CurrentStatus']
   updatePrinterStatus(data)
 });
 
 socket.on("printer_attributes", (data) => {
   //console.log(JSON.stringify(data))
-  var fields = {}
+  if (!printers[data.MainboardID].hasOwnProperty('attributes')) {
+    printers[data.MainboardID]['attributes'] = {}
+  }
   var filter = ['Resolution', 'XYZsize', 'NumberOfVideoStreamConnected', 'MaximumVideoStreamAllowed', 'UsbDiskStatus', 'Capabilities', 'SupportFileType', 'DevicesStatus', 'ReleaseFilmMax', 'CameraStatus', 'RemainingMemory', 'TLPNoCapPos', 'TLPStartCapPos', 'TLPInterLayers']
   $.each(data.Attributes, function (key, val) {
     if (filter.includes(key)) {
-      fields[key] = val
+      printers[data.MainboardID]['attributes'][key] = val
     }
   })
-  printers[data.MainboardID]['attributes'] = fields
   //updatePrinterAttributes(data)
 });
 
 function handle_printer_files(id, data) {
-  if (printers[id]['files'] == undefined) {
-    printers[id]['files'] = []
+  files = []
+  if (printers[id]['files'] !== undefined) {
+    files = printers[id]['files']
   }
   $.each(data, function (i, f) {
     if (f.type === 0) {
       getPrinterFiles(id, f.name)
     } else {
-      printers[id]['files'].push(f.name)
-      createTable('Files', [f.name])
+      if (!files.includes(f.name)) {
+        files.push(f.name)
+      }
     }
   })
+  printers[id]['files'] = files
+  createTable('Files', files)
 }
-
 
 function addPrinters(printers) {
   $.each(printers, function (id, printer) {
@@ -121,7 +138,7 @@ function showPrinter(id) {
   createTable('Status', p.status, true)
   createTable('Attributes', p.attributes)
   createTable('Print', p.status.PrintInfo)
-  
+
   // only get files once
   if (printers[id]['files'] == undefined) {
     getPrinterFiles(id, '/local')
@@ -129,27 +146,29 @@ function showPrinter(id) {
       getPrinterFiles(id, '/usb')
     }
   }
+
+  $('#uploadPrinter').val(id)
 }
 
 function createTable(name, data, active = false) {
-  if ($('#tab-'+name).length == 0) {
+  if ($('#tab-' + name).length == 0) {
     var tTab = $("#tmplNavTab").html()
     var tab = $(tTab)
-    tab.find('button').attr('id', 'tab-'+name)
-    tab.find('button').attr('data-bs-target', '#tab'+name)
+    tab.find('button').attr('id', 'tab-' + name)
+    tab.find('button').attr('data-bs-target', '#tab' + name)
     tab.find('button').text(name)
-    if(active) {
+    if (active) {
       tab.find('button').addClass('active')
     }
     $('#navTabs').append(tab)
   }
 
-  if ($('#tab'+name).length == 0) {
+  if ($('#tab' + name).length == 0) {
     var tPane = $("#tmplNavPane").html()
     var pane = $(tPane)
-    pane.attr('id', 'tab'+name)
-    pane.find('tbody').attr('id', 'table'+name)
-    if(active) {
+    pane.attr('id', 'tab' + name)
+    pane.find('tbody').attr('id', 'table' + name)
+    if (active) {
       pane.addClass('active')
     }
     $('#navPanes').append(pane)
@@ -158,7 +177,8 @@ function createTable(name, data, active = false) {
 }
 
 function fillTable(table, data) {
-  var t = $('#table'+table)
+  var t = $('#table' + table)
+  t.empty()
   $.each(data, function (key, val) {
     if (typeof val === 'object') {
       val = JSON.stringify(val)
@@ -192,8 +212,12 @@ function updatePrinterStatus(data) {
       updatePrinterStatusIcon(data.MainboardID, "info", true)
       break
     case SDCP_MACHINE_STATUS_DEVICES_TESTING:
-      info.text("Device Self-Test")
+      info.text("Devices Self-Test")
       updatePrinterStatusIcon(data.MainboardID, "warning", true)
+      break
+    case SDCP_MACHINE_STATUS_UNKNOWN_8:
+      info.text("UNKNOWN STATUS")
+      updatePrinterStatusIcon(data.MainboardID, "info", true)
       break
     default:
       break
@@ -226,16 +250,71 @@ function setServerStatus(online) {
   }
 }
 
-$('.serverStatus').on("mouseenter", function (e) {
+$('#btnUpload').on('click', function () {
+  uploadFile()
+});
+
+function uploadFile() {
+  var req = $.ajax({
+    url: '/upload',
+    type: 'POST',
+    data: new FormData($('#formUpload')[0]),
+    // Tell jQuery not to process data or worry about content-type
+    // You *must* include these options!
+    cache: false,
+    contentType: false,
+    processData: false,
+    // Custom XMLHttpRequest
+    xhr: function () {
+      var myXhr = $.ajaxSettings.xhr();
+      if (myXhr.upload) {
+        // For handling the progress of the upload
+        myXhr.upload.addEventListener('progress', function (e) {
+          if (e.lengthComputable) {
+            var percent = Math.floor(e.loaded / e.total * 100);
+            $('#progressUpload').text(percent + '%').css('width', percent + '%');
+            if (percent == 100) {
+              $('#progressUpload').addClass('progress-bar-striped progress-bar-animated')
+            }
+          }
+        }, false);
+      }
+      return myXhr;
+    }
+  })
+  req.done(function (data) {
+    $('#uploadFile').val('')
+    $("#toastUpload").show()
+    setTimeout(function () {
+      $("#toastUpload").hide()
+    }, 3000)
+  })
+  req.fail(function (data) {
+    alert(data.responseJSON.msg)
+  })
+  req.always(function () {
+    setTimeout(function () {
+      $('#progressUpload').text('0%').css('width', '0%').removeClass('progress-bar-striped progress-bar-animated');
+    }, 1000)
+  })
+}
+
+$('.serverStatus').on('mouseenter', function (e) {
   if ($(this).hasClass('bi-cloud-check-fill')) {
     $(this).removeClass('bi-cloud-check-fill').addClass('bi-cloud-plus text-primary')
   }
 });
-$('.serverStatus').on("mouseleave", function (e) {
+
+$('.serverStatus').on('mouseleave', function (e) {
   $(this).removeClass('bi-cloud-plus text-primary').addClass('bi-cloud-check-fill')
 });
+
 $('.serverStatus').on('click', function (e) {
   socket.emit("printers", "{}")
+});
+
+$('#toastUpload .btn-close').on('click', function (e) {
+  $("#toastUpload").hide()
 });
 
 /* global bootstrap: false */

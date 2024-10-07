@@ -1,0 +1,5 @@
+* upload progress should use to-printer upload
+* file deletion
+* manual adding of printers
+* camera frame/stream
+* print job control

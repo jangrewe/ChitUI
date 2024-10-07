@@ -1,4 +1,5 @@
-from flask import Flask, send_file
+from flask import Flask, Response, request, jsonify
+from werkzeug.utils import secure_filename
 from flask_socketio import SocketIO
 from threading import Thread
 from loguru import logger
@@ -8,16 +9,23 @@ import os
 import websocket
 import time
 import sys
+import requests
+import hashlib
+import uuid
 
 debug = False
 log_level = "INFO"
-if os.environ.get("DEBUG") is not None and os.environ.get("DEBUG"):
+if os.environ.get("DEBUG") is not None:
     debug = True
     log_level = "DEBUG"
 
+logger.remove()
 logger.add(sys.stdout, colorize=debug, level=log_level)
 
 port = 54780
+if os.environ.get("PORT") is not None:
+    port = os.environ.get("PORT")
+
 discovery_timeout = 1
 app = Flask(__name__,
             static_url_path='',
@@ -26,10 +34,103 @@ socketio = SocketIO(app)
 websockets = {}
 printers = {}
 
+UPLOAD_FOLDER = '/tmp'
+ALLOWED_EXTENSIONS = {'ctb', 'goo'}
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
 
 @app.route("/")
 def web_index():
     return app.send_static_file('index.html')
+
+
+@app.route('/upload', methods=['GET', 'POST'])
+def upload_file():
+    if request.method == 'POST':
+        if 'file' not in request.files:
+            logger.error("No 'file' parameter in request.")
+            return Response('{"upload": "error", "msg": "Malformed request - no file."}', status=400, mimetype="application/json")
+        file = request.files['file']
+        if file.filename == '':
+            logger.error('No file selected to be uploaded.')
+            return Response('{"upload": "error", "msg": "No file selected."}', status=400, mimetype="application/json")
+        form_data = request.form.to_dict()
+        if 'printer' not in form_data or form_data['printer'] == "":
+            logger.error("No 'printer' parameter in request.")
+            return Response('{"upload": "error", "msg": "Malformed request - no printer."}', status=400, mimetype="application/json")
+        printer = printers[form_data['printer']]
+        if file and not allowed_file(file.filename):
+            logger.error("Invalid filetype.")
+            return Response('{"upload": "error", "msg": "Invalid filetype."}', status=400, mimetype="application/json")
+
+        filename = secure_filename(file.filename)
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        file.save(filepath)
+        logger.debug(
+            "File '{f}' received, uploading to printer '{p}'...", f=filename, p=printer['name'])
+        upload_file(printer['ip'], filepath)
+        return Response('{"upload": "success", "msg": "File uploaded"}', status=200, mimetype="application/json")
+    else:
+        return Response("u r doin it rong", status=405, mimetype='text/plain')
+
+
+def allowed_file(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
+def upload_file(printer_ip, filepath):
+    part_size = 1048576
+    filename = os.path.basename(filepath)
+    md5_hash = hashlib.md5()
+    with open(filepath, "rb") as f:
+        for byte_block in iter(lambda: f.read(4096), b""):
+            md5_hash.update(byte_block)
+    file_stats = os.stat(filepath)
+    post_data = {
+        'S-File-MD5': md5_hash.hexdigest(),
+        'Check': 1,
+        'Offset': 0,
+        'Uuid': uuid.uuid4(),
+        'TotalSize': file_stats.st_size,
+    }
+    url = 'http://{ip}:3030/uploadFile/upload'.format(ip=printer_ip)
+    num_parts = (int)(file_stats.st_size / part_size)
+    logger.debug("Uploaded file will be split into {} parts", num_parts)
+    i = 0
+    while i <= num_parts:
+        offset = i * part_size
+        with open(filepath, 'rb') as f:
+            f.seek(offset)
+            file_part = f.read(part_size)
+            logger.debug("Uploading part {}/{} (offset: {})", i, num_parts, offset)
+            if not upload_file_part(url, post_data, filename, file_part, offset):
+                logger.error("Uploading file to printer failed.")
+                break
+            logger.debug("Part {}/{} uploaded.", i, num_parts, offset)
+        i += 1
+    os.remove(filepath)
+    return True
+
+
+def upload_file_part(url, post_data, file_name, file_part, offset):
+    post_data['Offset'] = offset
+    post_files = {'File': (file_name, file_part)}
+    #post_files = {'File': file_part}
+    response = requests.post(url, data=post_data, files=post_files)
+    status = json.loads(response.text)
+    if status['success']:
+        return True
+    logger.error(json.loads(response.text))
+    return False
+
+
+def read_in_chunks(file, chunk_size=126976):
+    while True:
+        data = file.read(chunk_size)
+        if not data:
+            break
+        yield data
 
 
 @socketio.on('connect')
@@ -178,9 +279,8 @@ def ws_msg_handler(ws, msg):
 
 def main():
     printers = discover_printers()
-    if len(printers) > 0:
+    if printers:
         connect_printers(printers)
-        logger.info("Setting up connections: done.")
         socketio.emit('printers', printers)
     else:
         logger.error("No printers discovered.")

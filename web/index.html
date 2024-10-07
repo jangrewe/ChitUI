@@ -105,7 +105,38 @@
           <div class="tab-content" id="navPanes"></div>
         </div>
 
+        <div class="card mt-3">
+          <div class="card-header">
+            File Upload
+          </div>
+          <div class="card-body">
+            <div class="">
+              <form enctype="multipart/form-data" method="post" id="formUpload">
+                <!-- <label for="formFile" class="form-label">Default file input example</label> -->
+                <input id="uploadFile" class="form-control" type="file" name="file">
+                <input id="uploadPrinter" type="hidden" name="printer" value="">
+                <div class="progress mt-3" role="progressbar" aria-label="Example with label" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100">
+                  <div id="progressUpload" class="progress-bar" style="width: 0%">0%</div>
+                </div>
+                <button id="btnUpload" type="button" class="btn btn-secondary mt-3">Upload</button>
+              </form>
+            </div>
+          </div>        
+        </div>        
+        
+        <div id="toastUpload" class="toast position-fixed top-0 end-0 m-3" role="alert" aria-live="assertive" aria-atomic="true">
+          <div class="toast-header bg-body-secondary">
+            <i class="bi bi-file-earmark-arrow-up"></i>&nbsp;
+            <strong class="me-auto">File Upload</strong>
+            <small>11 mins ago</small>
+            <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+          </div>
+          <div class="toast-body bg-body-tertiary">Success!</div>
+        </div>
+          
+
       </div>
+
     </main>
 
     <template id="tmplPrintersListItem">
