@@ -2,6 +2,7 @@ const socket = io();
 var websockets = []
 var printers = {}
 var currentPrinter = null
+var progress = null
 
 socket.on("connect", () => {
   console.log('socket.io connected: ' + socket.id);
@@ -296,9 +297,11 @@ function uploadFile() {
         myXhr.upload.addEventListener('progress', function (e) {
           if (e.lengthComputable) {
             var percent = Math.floor(e.loaded / e.total * 100);
-            $('#progressUpload').text(percent + '%').css('width', percent + '%');
+            $('#progressUpload').text('Upload to ChitUI: '+percent + '%').css('width', percent + '%');
             if (percent == 100) {
-              $('#progressUpload').addClass('progress-bar-striped progress-bar-animated')
+              setTimeout(function() {
+                fileTransferProgress()
+              }, 1000)
             }
           }
         }, false);
@@ -317,9 +320,6 @@ function uploadFile() {
     alert(data.responseJSON.msg)
   })
   req.always(function () {
-    setTimeout(function () {
-      $('#progressUpload').text('0%').css('width', '0%').removeClass('progress-bar-striped progress-bar-animated');
-    }, 1000)
   })
 }
 
@@ -348,8 +348,27 @@ $(document).ready(function () {
 
 $('#btnConfirm').on('click', function () {
   socket.emit('action_' + $(this).data('action'), { id: currentPrinter, data: $(this).data('value') })
-  $('#tableFiles tr[data-file="'+$(this).data('value')+'"]').remove()
+  $('#tableFiles tr[data-file="' + $(this).data('value') + '"]').remove()
 });
+
+function fileTransferProgress() {
+  $('#progressUpload').addClass('progress-bar-striped progress-bar-animated')
+  progress = new EventSource('/progress');
+  progress.onmessage = function (event) {
+    if (event.data > 0) {
+      $('#progressUpload').text('Upload to printer: '+event.data + '%').css('width', event.data + '%').addClass('text-bg-warning');
+    }
+    if (event.data == 100) {
+      setTimeout(function () {
+        $('#progressUpload').text('0%').css('width', '0%');
+        setTimeout(function () {
+          $('#progressUpload').removeClass('progress-bar-striped progress-bar-animated text-bg-warning')
+        }, 1000)
+      }, 1000)
+      progress.close()
+    }
+  };
+}
 
 /* global bootstrap: false */
 (() => {

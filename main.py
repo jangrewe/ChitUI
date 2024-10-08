@@ -1,4 +1,4 @@
-from flask import Flask, Response, request, jsonify
+from flask import Flask, Response, request, stream_with_context
 from werkzeug.utils import secure_filename
 from flask_socketio import SocketIO
 from threading import Thread
@@ -15,7 +15,7 @@ import uuid
 
 debug = False
 log_level = "INFO"
-if os.environ.get("DEBUG") is not None:
+if os.environ.get("DEBUG"):
     debug = True
     log_level = "DEBUG"
 
@@ -37,11 +37,25 @@ printers = {}
 UPLOAD_FOLDER = '/tmp'
 ALLOWED_EXTENSIONS = {'ctb', 'goo'}
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+uploadProgress = 0
 
 
 @app.route("/")
 def web_index():
     return app.send_static_file('index.html')
+
+
+@app.route('/progress')
+def progress():
+    def publish_progress():
+        while uploadProgress <= 100:
+            yield "data:{p}\n\n".format(p=get_upload_progress())
+            time.sleep(1)
+    return Response(publish_progress(), mimetype="text/event-stream")
+
+
+def get_upload_progress():
+    return uploadProgress
 
 
 @app.route('/upload', methods=['GET', 'POST'])
@@ -80,6 +94,7 @@ def allowed_file(filename):
 
 
 def upload_file(printer_ip, filepath):
+    global uploadProgress
     part_size = 1048576
     filename = os.path.basename(filepath)
     md5_hash = hashlib.md5()
@@ -100,6 +115,7 @@ def upload_file(printer_ip, filepath):
     i = 0
     while i <= num_parts:
         offset = i * part_size
+        uploadProgress = round(i / num_parts * 100)
         with open(filepath, 'rb') as f:
             f.seek(offset)
             file_part = f.read(part_size)
@@ -110,6 +126,7 @@ def upload_file(printer_ip, filepath):
                 break
             logger.debug("Part {}/{} uploaded.", i, num_parts, offset)
         i += 1
+    uploadProgress = 100
     os.remove(filepath)
     return True
 
