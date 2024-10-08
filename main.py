@@ -103,7 +103,8 @@ def upload_file(printer_ip, filepath):
         with open(filepath, 'rb') as f:
             f.seek(offset)
             file_part = f.read(part_size)
-            logger.debug("Uploading part {}/{} (offset: {})", i, num_parts, offset)
+            logger.debug("Uploading part {}/{} (offset: {})",
+                         i, num_parts, offset)
             if not upload_file_part(url, post_data, filename, file_part, offset):
                 logger.error("Uploading file to printer failed.")
                 break
@@ -116,21 +117,12 @@ def upload_file(printer_ip, filepath):
 def upload_file_part(url, post_data, file_name, file_part, offset):
     post_data['Offset'] = offset
     post_files = {'File': (file_name, file_part)}
-    #post_files = {'File': file_part}
     response = requests.post(url, data=post_data, files=post_files)
     status = json.loads(response.text)
     if status['success']:
         return True
     logger.error(json.loads(response.text))
     return False
-
-
-def read_in_chunks(file, chunk_size=126976):
-    while True:
-        data = file.read(chunk_size)
-        if not data:
-            break
-        yield data
 
 
 @socketio.on('connect')
@@ -161,6 +153,19 @@ def sio_handle_printer_status(data):
 def sio_handle_printer_files(data):
     logger.debug('client.printer_files >> '+json.dumps(data))
     get_printer_files(data['id'], data['url'])
+
+
+@socketio.on('action_delete')
+def sio_handle_action_delete(data):
+    logger.debug('client.action_delete >> '+json.dumps(data))
+    send_printer_cmd(data['id'], 259, {"FileList": [data['data']]})
+
+
+@socketio.on('action_print')
+def sio_handle_action_print(data):
+    logger.debug('client.action_print >> '+json.dumps(data))
+    send_printer_cmd(data['id'], 128, {
+                     "Filename": data['data'], "StartLayer": 0})
 
 
 def get_printer_status(id):

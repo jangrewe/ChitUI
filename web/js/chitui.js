@@ -1,7 +1,7 @@
 const socket = io();
 var websockets = []
 var printers = {}
-
+var currentPrinter = null
 
 socket.on("connect", () => {
   console.log('socket.io connected: ' + socket.id);
@@ -29,6 +29,10 @@ socket.on("printer_response", (data) => {
     case SDCP_CMD_RETRIEVE_FILE_LIST:
       handle_printer_files(data.Data.MainboardID, data.Data.Data.FileList)
       break
+    case SDCP_CMD_BATCH_DELETE_FILES:
+      modalConfirm.hide()
+    case SDCP_CMD_START_PRINTING:
+      modalConfirm.hide()
     default:
       console.log(data)
       break
@@ -102,6 +106,7 @@ function handle_printer_files(id, data) {
   })
   printers[id]['files'] = files
   createTable('Files', files)
+  addFileOptions()
 }
 
 function addPrinters(printers) {
@@ -129,6 +134,7 @@ function addPrinters(printers) {
 
 function showPrinter(id) {
   //console.log(JSON.stringify(printers[id]))
+  currentPrinter = id
   var p = printers[id]
   var printerIcon = (p.brand + '_' + p.model).split(" ").join("").toLowerCase()
   $('#printerName').text(p.name)
@@ -183,13 +189,31 @@ function fillTable(table, data) {
     if (typeof val === 'object') {
       val = JSON.stringify(val)
     }
-    var row = $('<tr><td>' + key + '</td><td>' + val + '</td></tr>')
+    var row = $('<tr><td class="fieldKey">' + key + '</td><td class="fieldValue">' + val + '</td></tr>')
     t.append(row)
   })
 }
 
 function getPrinterFiles(id, url) {
   socket.emit("printer_files", { id: id, url: url })
+}
+
+function addFileOptions() {
+  $('#tableFiles .fieldValue').each(function () {
+    var file = $(this).text()
+    var options = $('<i class="bi bi-printer-fill fileOption ps-3" data-action="print" data-file="' + file + '"></i><i class="bi bi-trash-fill fileOption ps-1" data-action="delete" data-file="' + file + '"></i>')
+    $(this).append(options)
+    $(this).parent().attr('data-file', file)
+  })
+  $('.fileOption').on('click', function (e) {
+    var action = $(this).data('action')
+    var file = $(this).data('file')
+    $('#modalConfirmTitle').text('Confirm ' + action)
+    $('#modalConfirmAction').text(action)
+    $('#modalConfirmValue').text(file)
+    $('#btnConfirm').data('action', action).data('value', file)
+    modalConfirm.show()
+  })
 }
 
 function updatePrinterStatus(data) {
@@ -201,7 +225,7 @@ function updatePrinterStatus(data) {
       break
     case SDCP_MACHINE_STATUS_PRINTING:
       info.text("Printing")
-      updatePrinterStatusIcon(data.MainboardID, "primary", true)
+      updatePrinterStatusIcon(data.MainboardID, "success", true)
       break
     case SDCP_MACHINE_STATUS_FILE_TRANSFERRING:
       info.text("File Transfer")
@@ -315,6 +339,16 @@ $('.serverStatus').on('click', function (e) {
 
 $('#toastUpload .btn-close').on('click', function (e) {
   $("#toastUpload").hide()
+});
+
+var modalConfirm;
+$(document).ready(function () {
+  modalConfirm = new bootstrap.Modal($('#modalConfirm'), {})
+});
+
+$('#btnConfirm').on('click', function () {
+  socket.emit('action_' + $(this).data('action'), { id: currentPrinter, data: $(this).data('value') })
+  $('#tableFiles tr[data-file="'+$(this).data('value')+'"]').remove()
 });
 
 /* global bootstrap: false */

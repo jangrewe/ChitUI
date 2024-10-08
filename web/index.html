@@ -133,7 +133,24 @@
           </div>
           <div class="toast-body bg-body-tertiary">Success!</div>
         </div>
-          
+
+        <div class="modal fade" id="modalConfirm" tabindex="-1" aria-labelledby="modalConfirmTitle" aria-hidden="true">
+          <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h1 class="modal-title fs-5" id="modalConfirmTitle"</h1>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+              <div class="modal-body">
+                Please confirm that you want to <span id="modalConfirmAction"></span> <span class="badge bg-body-secondary font-monospace text-wrap" id="modalConfirmValue"></span>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-success" id="btnConfirm" data-action="" data-value="">Confirm</button>
+              </div>
+            </div>
+          </div>
+        </div>        
 
       </div>
 
