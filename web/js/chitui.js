@@ -25,15 +25,16 @@ socket.on("printer_response", (data) => {
   switch (data.Data.Cmd) {
     case SDCP_CMD_STATUS:
     case SDCP_CMD_ATTRIBUTES:
-      //console.log(JSON.stringify(data))
       break
     case SDCP_CMD_RETRIEVE_FILE_LIST:
-      handle_printer_files(data.Data.MainboardID, data.Data.Data.FileList)
+      handle_printer_files(data)
       break
     case SDCP_CMD_BATCH_DELETE_FILES:
       modalConfirm.hide()
+      break
     case SDCP_CMD_START_PRINTING:
       modalConfirm.hide()
+      break
     default:
       console.log(data)
       break
@@ -53,6 +54,15 @@ socket.on("printer_notice", (data) => {
 });
 
 socket.on("printer_status", (data) => {
+  handle_printer_status(data)
+});
+
+socket.on("printer_attributes", (data) => {
+  handle_printer_attributes(data)
+});
+
+
+function handle_printer_status(data) {
   //console.log(JSON.stringify(data))
   if (!printers[data.MainboardID].hasOwnProperty('status')) {
     printers[data.MainboardID]['status'] = {}
@@ -75,10 +85,14 @@ socket.on("printer_status", (data) => {
   }
   printers[data.MainboardID]['status']['PreviousStatus'] = printer_status['CurrentStatus']
   updatePrinterStatus(data)
-});
+  createTable('Status', data.Status)
+  if (data.Status.CurrentStatus.includes(1)) {
+    createTable('Print', data.Status.PrintInfo)
+  }
+}
 
-socket.on("printer_attributes", (data) => {
-  //console.log(JSON.stringify(data))
+function handle_printer_attributes(data) {
+  console.log(data)
   if (!printers[data.MainboardID].hasOwnProperty('attributes')) {
     printers[data.MainboardID]['attributes'] = {}
   }
@@ -88,15 +102,16 @@ socket.on("printer_attributes", (data) => {
       printers[data.MainboardID]['attributes'][key] = val
     }
   })
-  //updatePrinterAttributes(data)
-});
+  createTable('Attributes', data.Attributes)
+}
 
-function handle_printer_files(id, data) {
+function handle_printer_files(data) {
+  var id = data.Data.MainboardID
   files = []
   if (printers[id]['files'] !== undefined) {
     files = printers[id]['files']
   }
-  $.each(data, function (i, f) {
+  $.each(data.Data.Data.FileList, function (i, f) {
     if (f.type === 0) {
       getPrinterFiles(id, f.name)
     } else {
@@ -297,9 +312,9 @@ function uploadFile() {
         myXhr.upload.addEventListener('progress', function (e) {
           if (e.lengthComputable) {
             var percent = Math.floor(e.loaded / e.total * 100);
-            $('#progressUpload').text('Upload to ChitUI: '+percent + '%').css('width', percent + '%');
+            $('#progressUpload').text('Upload to ChitUI: ' + percent + '%').css('width', percent + '%');
             if (percent == 100) {
-              setTimeout(function() {
+              setTimeout(function () {
                 fileTransferProgress()
               }, 1000)
             }
@@ -356,7 +371,7 @@ function fileTransferProgress() {
   progress = new EventSource('/progress');
   progress.onmessage = function (event) {
     if (event.data > 0) {
-      $('#progressUpload').text('Upload to printer: '+event.data + '%').css('width', event.data + '%').addClass('text-bg-warning');
+      $('#progressUpload').text('Upload to printer: ' + event.data + '%').css('width', event.data + '%').addClass('text-bg-warning');
     }
     if (event.data == 100) {
       setTimeout(function () {
