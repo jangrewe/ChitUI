@@ -35,7 +35,7 @@ websockets = {}
 printers = {}
 
 UPLOAD_FOLDER = '/tmp'
-ALLOWED_EXTENSIONS = {'ctb', 'goo'}
+ALLOWED_EXTENSIONS = {'ctb', 'goo', 'prz'}
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 uploadProgress = 0
 
